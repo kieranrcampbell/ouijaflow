@@ -8,6 +8,7 @@ setup(name='ouijaflow',
       packages=['ouijaflow'],
       install_requires=[
           'tensorflow',
-          'edward'
+          'edward',
+          'pandas'
       ],
       zip_safe=False)
