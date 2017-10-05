@@ -37,6 +37,13 @@ class ouija:
         """ Form likelihood and approximating distributions of Ouija
 
         """
+        N = self.N
+        G = self.G
+        Q = self.Q
+
+        ds = tf.contrib.distributions
+
+
         k = Normal(loc = tf.zeros([G,Q]), scale = 50 * tf.ones([G,Q]), name = "k")
         t0 = Normal(loc = 0.5 * tf.ones(G), scale = 1 * tf.ones(G))
 
@@ -107,7 +114,7 @@ class ouija:
         """ Returns a 1-D numpy array holding the maximum a-posteriori (MAP) pseudotimes
 
         """
-        return self.qz.bijector.forward(qz.distribution.parameters['loc']).eval()
+        return self.qz.bijector.forward(self.qz.distribution.parameters['loc']).eval().reshape(-1)
 
     def gene_behaviour(self):
         """ Returns a pd.DataFrame with the gene-specific parameters
@@ -122,21 +129,21 @@ class ouija:
         7) mu0_mean: The posterior mean of the half-peak expression parameter
         """
 
-        t0_sd = tf.nn.softplus(qt0.distribution.parameters['scale'])
-        k_sd = tf.nn.softplus(qk.parameters['scale'])
+        t0_sd = tf.nn.softplus(self.qt0.distribution.parameters['scale'])
+        k_sd = tf.nn.softplus(self.qk.parameters['scale'])
 
-        k_mean = qk.parameters['loc']
-        t0_mean = qt0.distribution.parameters['loc']
+        k_mean = self.qk.parameters['loc']
+        t0_mean = self.qt0.distribution.parameters['loc']
 
-        mu0_mean = qmu0.bijector.forward(qmu0.distribution.parameters['loc'])
+        mu0_mean = self.qmu0.bijector.forward(self.qmu0.distribution.parameters['loc'])
 
         gene_df = pd.DataFrame({
             "k_mean": k_mean.eval().reshape(-1),
             "k_lower": (k_mean - k_sd).eval().reshape(-1),
             "k_upper": (k_mean + k_sd).eval().reshape(-1),
-            "t0_mean": qt0.bijector.forward(t0_mean).eval().reshape(-1),
-            "t0_lower": qt0.bijector.forward(t0_mean - t0_sd).eval().reshape(-1),
-            "t0_upper": qt0.bijector.forward(t0_mean + t0_sd).eval().reshape(-1),
+            "t0_mean": self.qt0.bijector.forward(t0_mean).eval().reshape(-1),
+            "t0_lower": self.qt0.bijector.forward(t0_mean - t0_sd).eval().reshape(-1),
+            "t0_upper": self.qt0.bijector.forward(t0_mean + t0_sd).eval().reshape(-1),
             "mu0_mean": mu0_mean.eval().reshape(-1)
         })
 
