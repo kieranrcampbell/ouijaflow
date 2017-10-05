@@ -9,17 +9,21 @@ import pandas as pd
 
 class ouija:
 
-    def __init__(self, Q = 1):
-        self.Q = Q
+    def __init__(self):
+        self.Q = 1
     
     def fit(self, Y, n_iter = 1000, logdir = None):
-        """ Something really intelligent here
+        """ Fit the Ouija model using variational inference with reparametrisation gradient
 
+        Args:
+            Y (numpy.array): A cell-by-gene matrix of gene expression values representing non-negative log expression
+            n_iter (int): Number of iterations of optimisation to perform
+            logdir (str): Directory for logging (debugging)
         """
         self.N = Y.shape[0] # Number of cells
         self.G = Y.shape[1] # Number of genes
 
-        approx_dict, Y_param = self._build_model_and_approximations()
+        approx_dict,Y_param = self._build_model_and_approximations()
 
         data_dict = {Y_param: Y}
 
@@ -30,6 +34,9 @@ class ouija:
 
     
     def _build_model_and_approximations(self):
+        """ Form likelihood and approximating distributions of Ouija
+
+        """
         k = Normal(loc = tf.zeros([G,Q]), scale = 50 * tf.ones([G,Q]), name = "k")
         t0 = Normal(loc = 0.5 * tf.ones(G), scale = 1 * tf.ones(G))
 
@@ -97,9 +104,24 @@ class ouija:
         return approx_dict, Y
 
     def trajectory(self):
+        """ Returns a 1-D numpy array holding the maximum a-posteriori (MAP) pseudotimes
+
+        """
         return self.qz.bijector.forward(qz.distribution.parameters['loc']).eval()
 
     def gene_behaviour(self):
+        """ Returns a pd.DataFrame with the gene-specific parameters
+
+        The data frame has the following columns:
+        1) k_mean: The posterior mean of the activation strength parameters
+        2) k_lower: The posterior mean minus one s.d. of the activation strength parameters
+        3) k_upper: The posterior mean plus one s.d. of the activation strength parameters
+        4) t0_mean: The posterior mean of the activation time parameters
+        5) t0_lower: The posterior mean minus one s.d. of the activation time parameters
+        6) t0_upper: The posterior mean plus one s.d. of the activation time parameters
+        7) mu0_mean: The posterior mean of the half-peak expression parameter
+        """
+
         t0_sd = tf.nn.softplus(qt0.distribution.parameters['scale'])
         k_sd = tf.nn.softplus(qk.parameters['scale'])
 
@@ -121,6 +143,7 @@ class ouija:
         return gene_df
 
     def approx_dists(self):
+        """ Get the dictionary of the approximating distributions """
 
         approx_dict = {
             "k": self.qk,
